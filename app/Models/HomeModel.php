@@ -1,0 +1,12 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class HomeModel extends Model
+{
+    protected $connection   = 'mysql';
+    protected $primaryKey   = 'id';
+    protected $table        = 'home';
+}
