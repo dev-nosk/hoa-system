@@ -17,8 +17,10 @@ return new class extends Migration
             $table->integer('home_id')->default(0);
             $table->text('form_name')->nullable();
             $table->text('table')->nullable();
+            $table->text('model_name')->nullable();
             $table->integer('create_record')->default(0);
             $table->text('link')->nullable();
+            $table->integer('initial_status');
             $table->bigInteger('created_by')->nullable();
             $table->date('created_at')->nullable();
             $table->bigInteger('updated_by')->nullable();

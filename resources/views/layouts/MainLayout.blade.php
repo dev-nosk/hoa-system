@@ -15,6 +15,8 @@ $forms          =  session('forms');
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>HOA System</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <link rel="apple-touch-icon" sizes="180x180" href="{{asset('img/favicons/apple-touch-icon.png')}}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{asset('img/favicons/favicon-32x32.png')}}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{asset('img/logos/oxford.png')}}">
@@ -48,9 +50,66 @@ $forms          =  session('forms');
     <link rel="stylesheet" href="{{ asset('js/datatable_bs5/SearchPanes-2.2.0/css/searchPanes.bootstrap5.min.css') }}?v=1">
     <link rel="stylesheet" href="{{ asset('js/datatable_bs5/Select-1.7.0/css/select.bootstrap5.min.css') }}?v=1">
     <link rel="stylesheet" href="{{ asset('js/datatable_bs5/StateRestore-1.3.0/css/stateRestore.bootstrap5.min.css') }}?v=1">
+    <link rel="stylesheet" href="{{ asset('assets_admin_v2/select-2-bs-5//css/select2.min.css') }}?v=1">
+    <link rel="stylesheet" href="{{ asset('assets_admin_v2/select-2-bs-5//css/select2-bootstrap-5-theme.min.css') }}?v=1">
+     <link rel="stylesheet" href="{{ asset('assets_admin_v2/toast/css/toastify.min.css') }}?v=1">
+
+
 
 </head>
+<style>
+    /* Skeleton animation */
+.skeleton {
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
 
+.skeleton::after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    left: -150px;
+    height: 100%;
+    width: 150px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: loading 1.2s infinite;
+}
+
+@keyframes loading {
+    0% {
+        left: -150px;
+    }
+    50% {
+        left: 100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* Skeleton sizes */
+.skeleton-text {
+    height: 16px;
+    margin-bottom: 8px;
+    width: 80%;
+}
+
+.skeleton-title {
+    height: 24px;
+    margin-bottom: 12px;
+    width: 50%;
+}
+
+.skeleton-button {
+    height: 36px;
+    width: 100px;
+    border-radius: 6px;
+}
+
+</style>
 <body>
     <!-- ===============================================--><!--    Main Content--><!-- ===============================================-->
     <main class="main" id="top">
@@ -502,7 +561,7 @@ $forms          =  session('forms');
                     <div class="navbar-vertical-content scrollbar">
                         <ul class="navbar-nav flex-column mb-3" id="navbarVerticalNav">
                             <li class="nav-item">
-                                 <a class="nav-link" href="{{ route('mainview') }}">
+                                <a class="nav-link" href="{{ route('mainview') }}">
                                     <div class="d-flex align-items-center">
                                         <span class="nav-link-icon">
                                             <span class="fas fa-newspaper"></span>
@@ -543,14 +602,14 @@ $forms          =  session('forms');
                                 </a>
                                 <ul class="nav collapse" id="toggle-{{ $form['id']}}">
                                     @if($form['create_record'] == 1)
-                                    <li class="nav-item"><a class="nav-link create-record" href="#" data-formid="{{ $form['id'] }}">
+                                    <li class="nav-item"><a class="nav-link create-record" href="#" data-formname="{{ $form['form_name'] }}" data-formid="{{ $form['id'] }}">
                                             <div class="d-flex align-items-center">
                                                 <span class="fa fa-plus"></span>
                                                 <span class="nav-link-text ps-1">Create {{ $form['link'] }}</span>
                                             </div>
                                         </a><!-- more inner pages--></li>
                                     @endif
-                                    <li class="nav-item"><a class="nav-link list-view" href="#" data-formid="{{ $form['id'] }}">
+                                    <li class="nav-item"><a class="nav-link list-view" href="#" data-formname="{{ $form['form_name'] }}" data-formid="{{ $form['id'] }}">
                                             <div class="d-flex align-items-center">
                                                 <span class="fa fa-table"></span>
                                                 <span class="nav-link-text ps-1">{{ $form['form_name'] }} List</span>
@@ -1789,38 +1848,41 @@ $forms          =  session('forms');
     </script>
     <!-- ===============================================--><!--    JavaScripts--><!-- ===============================================-->
     <script src="{{asset('js/library/jquery.min.js')}}"></script>
-   
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/JSZip-3.10.1/jszip.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/pdfmake-0.2.7/pdfmake.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/pdfmake-0.2.7/vfs_fonts.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/DataTables-1.13.8/js/jquery.dataTables.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/DataTables-1.13.8/js/dataTables.bootstrap5.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/AutoFill-2.6.0/js/dataTables.autoFill.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/AutoFill-2.6.0/js/autoFill.bootstrap5.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/Buttons-2.4.2/js/dataTables.buttons.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/Buttons-2.4.2/js/buttons.bootstrap5.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/Buttons-2.4.2/js/buttons.colVis.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/Buttons-2.4.2/js/buttons.html5.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/Buttons-2.4.2/js/buttons.print.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/ColReorder-1.7.0/js/dataTables.colReorder.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/DateTime-1.5.1/js/dataTables.dateTime.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/FixedColumns-4.3.0/js/dataTables.fixedColumns.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/FixedHeader-3.4.0/js/dataTables.fixedHeader.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/KeyTable-2.11.0/js/dataTables.keyTable.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/Responsive-2.5.0/js/dataTables.responsive.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/Responsive-2.5.0/js/responsive.bootstrap5.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/RowGroup-1.4.1/js/dataTables.rowGroup.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/RowReorder-1.4.1/js/dataTables.rowReorder.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/Scroller-2.3.0/js/dataTables.scroller.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/SearchBuilder-1.6.0/js/dataTables.searchBuilder.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/SearchBuilder-1.6.0/js/searchBuilder.bootstrap5.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/SearchPanes-2.2.0/js/dataTables.searchPanes.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/SearchPanes-2.2.0/js/searchPanes.bootstrap5.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/Select-1.7.0/js/dataTables.select.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/StateRestore-1.3.0/js/dataTables.stateRestore.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/StateRestore-1.3.0/js/stateRestore.bootstrap5.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/loadingoverlay.min.js') }}?v={{ config('app.asset_version') }}"></script>
-    <script src="{{ asset('assets_admin_v2/datatable_bs5/datetime-moment.js') }}?v={{ config('app.asset_version') }}"></script>
+
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/JSZip-3.10.1/jszip.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/pdfmake-0.2.7/pdfmake.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/pdfmake-0.2.7/vfs_fonts.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/DataTables-1.13.8/js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/DataTables-1.13.8/js/dataTables.bootstrap5.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/AutoFill-2.6.0/js/dataTables.autoFill.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/AutoFill-2.6.0/js/autoFill.bootstrap5.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/Buttons-2.4.2/js/dataTables.buttons.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/Buttons-2.4.2/js/buttons.bootstrap5.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/Buttons-2.4.2/js/buttons.colVis.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/Buttons-2.4.2/js/buttons.html5.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/Buttons-2.4.2/js/buttons.print.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/ColReorder-1.7.0/js/dataTables.colReorder.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/DateTime-1.5.1/js/dataTables.dateTime.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/FixedColumns-4.3.0/js/dataTables.fixedColumns.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/FixedHeader-3.4.0/js/dataTables.fixedHeader.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/KeyTable-2.11.0/js/dataTables.keyTable.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/Responsive-2.5.0/js/dataTables.responsive.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/Responsive-2.5.0/js/responsive.bootstrap5.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/RowGroup-1.4.1/js/dataTables.rowGroup.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/RowReorder-1.4.1/js/dataTables.rowReorder.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/Scroller-2.3.0/js/dataTables.scroller.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/SearchBuilder-1.6.0/js/dataTables.searchBuilder.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/SearchBuilder-1.6.0/js/searchBuilder.bootstrap5.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/SearchPanes-2.2.0/js/dataTables.searchPanes.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/SearchPanes-2.2.0/js/searchPanes.bootstrap5.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/Select-1.7.0/js/dataTables.select.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/StateRestore-1.3.0/js/dataTables.stateRestore.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/StateRestore-1.3.0/js/stateRestore.bootstrap5.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/loadingoverlay.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/datatable_bs5/datetime-moment.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/select-2-bs-5/js/select2.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/select-2-bs-5/js/select2.full.min.js') }}"></script>
+    <script src="{{ asset('assets_admin_v2/toast/js/toastify.min.js') }}"></script>
 
     <script src="{{asset('vendors/popper/popper.min.js')}}"></script>
     <script src="{{asset('vendors/bootstrap/bootstrap.min.js')}}"></script>
@@ -1830,23 +1892,22 @@ $forms          =  session('forms');
     <script src="{{asset('vendors/fontawesome/all.min.js')}}"></script>
     <script src="{{asset('vendors/lodash/lodash.min.js')}}"></script>
     <script src="{{asset('vendors/list.js/list.min.js')}}"></script>
+
     <script src="{{asset('js/theme.js')}}"></script>
 
-    @yield('scripts')
+
     <script>
         $(document).ready(function() {
-            $(document).on('click', '.create-record', function(e) {
-                e.preventDefault();
-                var form_id = $(this).data('formid');
-                alert(form_id);
-            })
-            $(document).on('click', '.list-view', function(e) {
-                e.preventDefault();
-                var form_id = $(this).data('formid');
-                alert('clicked : ' + form_id);
-            })
+            // Setup CSRF for all AJAX requests
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+            $('#content-display').html(`<center>no data loaded</center>`)         
         });
     </script>
+    @yield('scripts')
 </body>
 
 </html>
