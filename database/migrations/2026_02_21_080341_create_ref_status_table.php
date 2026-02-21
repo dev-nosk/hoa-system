@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('user_workgroup', function (Blueprint $table) {
+        Schema::create('ref_status', function (Blueprint $table) {
             $table->id();
-            $table->integer('workgroup_id')->nullable();
-            $table->integer('org_id')->nullable();
-            $table->integer('user_id')->nullable();
-            $table->integer('grant')->default(0);
+            $table->text('status_name');
+            $table->text('status_tag');
+            $table->integer('create_by')->default(1);
+            $table->integer('updated_by')->default(1);
             $table->timestamps();
         });
     }
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('user_workgroup');
+        Schema::dropIfExists('ref_status');
     }
 };

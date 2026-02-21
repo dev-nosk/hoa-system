@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('mname')->nullable();
             $table->string('email')->unique();
             $table->integer('org_id')->default(0);
+           
+            $table->integer('role')->default(3); #role 0 = superadmin, 1 = admin, 2 = office , 3 = normal user
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

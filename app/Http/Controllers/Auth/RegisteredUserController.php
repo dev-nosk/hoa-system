@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use App\Models\UserWorkgroupModel;
+use App\Models\WorkgroupModel;
 
 class RegisteredUserController extends Controller
 {
@@ -42,9 +44,16 @@ class RegisteredUserController extends Controller
         ]);
 
         event(new Registered($user));
-
+        # if successfully registered add get all workgroup and create user_workgroup record with grant 0
+        $workgroups = WorkgroupModel::all();
+        foreach ($workgroups as $workgroup) {
+            UserWorkgroupModel::create([
+                'workgroup_id' => $workgroup->id,
+                'user_id' => $user->id,
+                'grant' => 0,
+            ]);
+        }
         Auth::login($user);
-
         return redirect(route('mainview', absolute: false));
     }
 }

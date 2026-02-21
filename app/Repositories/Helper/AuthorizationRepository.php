@@ -6,6 +6,7 @@ use App\Models\WorkgroupModel;
 use App\Models\FormWorkgroupModel;
 use App\Models\FormsModel;
 use App\Models\HomeModel;
+use App\Models\UserWorkgroupModel;
 
 class AuthorizationRepository
 
@@ -22,7 +23,12 @@ class AuthorizationRepository
          if (! $user) {
             return null;
         }
-        $workgroups = WorkgroupModel::all();
+        # get all user workgroup with user_id and grant 1 and form workgroup with form_id and workgroup_id then get workgroup with id in form workgroup
+        
+        $userWorkgroups = UserWorkgroupModel::where('user_id', $user->id)->where('grant', 1)->get();
+        $workgroupIds = $userWorkgroups->pluck('workgroup_id');
+        $workgroups = FormWorkgroupModel::with('workgroup')->whereIn('workgroup_id', $workgroupIds)->get();
+
         return $workgroups; 
 
     }

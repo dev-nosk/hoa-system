@@ -9,8 +9,13 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\WorkgroupModel;
 use App\Models\FormFieldsModel;
 use App\Models\CategoryModel;
+use App\Models\FormStatusModel;
+use Illuminate\Support\Facades\Schema;
 use App\Models\User;
+
 use Illuminate\Support\Facades\View;
+
+use function Pest\Laravel\session;
 
 class MainController extends Controller
 {
@@ -29,26 +34,77 @@ class MainController extends Controller
             return null;
         }
         $user_data = $user->toArray();
-
-        if (!session()->has('workgroup')) {
+        // return response()->json($this->authorizationRepository->getWorkgroup()->toArray());
+        // if (!\session()->has('workgroup')) {
             $get_workgroup = $this->authorizationRepository->getWorkgroup()->toArray();
-            session()->put('workgroup', $get_workgroup);
-        }
-        if (!session()->has('form_workgroup')) {
+            $user_form_access = [];
+            $forms_access = [];
+
+            foreach ($get_workgroup as $workgroup) {
+                $formId = $workgroup['form_id'];
+
+                // Add form_id to forms_access if not already there
+                if (!in_array($formId, $forms_access)) {
+                    $forms_access[] = $formId;
+                }
+
+                // Initialize if not exists
+                if (!isset($user_form_access[$formId])) {
+                    $user_form_access[$formId] = [
+                        'form_id' => $formId,
+                        'workgroup_id' => $workgroup['workgroup_id'],
+                        'access' => [
+                            'create' => 0,
+                            'listview' => 0,
+                            'upload' => 0,
+                            'attachement_create' => 0,
+                        ]
+                    ];
+                }
+
+                // Aggregate access (logical OR)
+                $user_form_access[$formId]['access']['create'] = $user_form_access[$formId]['access']['create']
+                    || ($workgroup['workgroup']['create'] == 1 ? 1 : 0);
+                $user_form_access[$formId]['access']['listview'] = $user_form_access[$formId]['access']['listview']
+                    || ($workgroup['workgroup']['list_view'] == 1 ? 1 : 0);
+                $user_form_access[$formId]['access']['upload'] = $user_form_access[$formId]['access']['upload']
+                    || ($workgroup['workgroup']['upload'] == 1 ? 1 : 0);
+                $user_form_access[$formId]['access']['attachement_create'] = $user_form_access[$formId]['access']['attachement_create']
+                    || ($workgroup['workgroup']['attachement_create'] == 1 ? 1 : 0);
+            }
+
+            // Convert boolean to int
+            foreach ($user_form_access as &$form) {
+                foreach ($form['access'] as $key => $value) {
+                    $form['access'][$key] = $value ? 1 : 0;
+                }
+            }
+
+            // Make form IDs unique
+            $forms_access = array_unique($forms_access);
+
+            // Save in session
+            \session()->put('forms_access', $forms_access);
+            \session()->put('user_form_access', $user_form_access);
+            \session()->put('workgroup', $get_workgroup);
+        // }
+
+        // dd(\session()->get('user_form_access'));
+        if (!\session()->has('form_workgroup')) {
             $get_form_workgroup = $this->authorizationRepository->getFormWorkgroup()->toArray();
-            session()->put('form_workgroup', $get_form_workgroup);
+            \session()->put('form_workgroup', $get_form_workgroup);
         }
-        if (!session()->has('forms')) {
+        if (!\session()->has('forms')) {
             $get_forms = $this->authorizationRepository->getForms()->toArray();
 
             // Make the array key the form id
             $get_forms_by_id = array_column($get_forms, null, 'id');
 
-            session()->put('forms', $get_forms_by_id);
+            \session()->put('forms', $get_forms_by_id);
         }
-        if (!session()->has('home')) {
+        if (!\session()->has('home')) {
             $get_home = $this->authorizationRepository->getHome()->toArray();
-            session()->put('home', $get_home);
+            \session()->put('home', $get_home);
         }
 
 
@@ -202,8 +258,15 @@ class MainController extends Controller
     public function saveRecord(Request $request)
     {
 
-        $form_id = session('form_id', 0);
-        $forms = session('forms'); // get the array, not boolean
+        $form_id = \session()->get('form_id', 0);
+        $form_access = \session()->get('forms_access', []);
+        if (!in_array($form_id, $form_access)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have access to this form.'
+            ]);
+        }
+        $forms = \session()->get('forms'); // get the array, not boolean
         $valid_inputs = FormFieldsModel::where('form_id', $form_id)
             ->pluck('input_name')  // get only this column
             ->toArray();
@@ -297,34 +360,71 @@ class MainController extends Controller
     public function formBuilder(Request $request)
     {
         $formId = $request->form_id;
-        session()->put('form_id', $formId);
+        \session()->put('form_id', $formId);
+        $has_access =  $this->getAccessValidate($formId, 'create');
+
+        if (!$has_access) {
+            return response()->json([
+                'html' => '<center><h3>You do not have access to create records for this form.</h3></center>',
+                'success' => false,
+                'message' => 'You do not have access to create records for this form.'
+            ]);
+        }
 
         return response()->json([
-            'html' => $this->generateFormHtml($formId, false) // false = create/edit
+            'html' => $this->generateFormHtml($formId, false), // false = create/edit,
+            'isView' => false,
+            'form_status' => null
         ]);
     }
 
     public function viewRecord(Request $request)
     {
-        $formId = session('form_id');
+        $formId = \session()->get('form_id');
         $recordId = $request->record_id;
 
 
         // Get record if available
         $record = null;
-        $forms = session('forms');
+        $forms = \session()->get('forms');
         if ($recordId && isset($forms[$formId]['model_name'])) {
-          
+
             $modelName = $forms[$formId]['model_name'];
             if (class_exists($modelName)) {
-                 
+
                 $record = $modelName::find($recordId);
-              
             }
         }
- 
+        $current_status_id = $record ? $record->current_status_id : null;
+
+        $current_form_status = null;
+        $status_next = collect();
+
+        if ($formId && $current_status_id) {
+
+            $current_form_status = FormStatusModel::with('repStatus')->where('form_id', $formId)
+                ->where('status_id', $current_status_id)
+                ->first();
+
+            if ($current_form_status && $current_form_status->status_next) {
+                $nextStatusIds = explode(',', $current_form_status->status_next);
+
+                $nextStatusIds = array_map('trim', $nextStatusIds);
+
+                $status_next = FormStatusModel::with('repStatus')->where('form_id', $formId)
+                    ->whereIn('status_id', $nextStatusIds)
+                    ->get();
+            }
+        }
+
+        // dd($current_form_status, $status_nextes);
         return response()->json([
-            'html' => $this->generateFormHtml($formId, true, $record) // true = view mode
+            'html' => $this->generateFormHtml($formId, true, $record),
+            'isView' => true,
+            'status' => [
+                'current' => $current_form_status,
+                'next' => $status_next
+            ]
         ]);
     }
     private function generateFormHtml($formId, $isView = false, $record = null)
@@ -332,6 +432,9 @@ class MainController extends Controller
         $fields = FormFieldsModel::with(['refField', 'tab'])
             ->where('form_id', $formId)
             ->get();
+        if($fields->isEmpty()){
+            return '<center><h3>No fields defined for this form.</h3></center>';
+        }
 
         $tabIds = $fields->pluck('tab_id')->unique()->toArray();
         $uniqueTabs = $fields->pluck('tab')->filter()->unique('id')->sortBy('id')->values();
@@ -380,16 +483,16 @@ class MainController extends Controller
                       <div class="row">';
             if (isset($tabsFields[$tab->id])) {
                 foreach ($tabsFields[$tab->id] as $field) {
-                   
+
                     $field_data = $field->refField;
                     if (!$field_data) continue;
-                          $field_unique_id = $formId . '_' . $field->sequence . '_' . $field_data->id;
+                    $field_unique_id = $formId . '_' . $field->sequence . '_' . $field_data->id;
                     $viewName = 'form.' . $field_data->field_type;
 
                     if (View::exists($viewName)) {
-                    
+
                         $value = $record ? ($record->{$field['input_name']} ?? '') : '';
-             
+
                         $html .= view($viewName, compact('field', 'field_data', 'field_unique_id', 'isView', 'value'))->render();
                     } else {
                         $html .= "<!-- View {$viewName} does not exist -->";
@@ -406,35 +509,50 @@ class MainController extends Controller
 
 
     public function getList(Request $request)
-{
-    $formId = $request->form_id;
-    session()->put('form_id', $formId);
+    {
+        $formId = $request->form_id;
+        \session()->put('form_id', $formId);
+        $has_access =  $this->getAccessValidate($formId, 'listview');
 
-    $forms = session('forms');
+        if (!$has_access) {
+            return response()->json([
+                'success' => false,
+                'records' => [],
+                'message' => '<center>You do not have access to view records for this form.</center>'
+            ]);
+        }
+        $forms = \session()->get('forms', []);
 
-    if (!$formId || !isset($forms[$formId]['model_name'])) {
+        if (!$formId || !isset($forms[$formId]['model_name'])) {
+            return response()->json([
+                'success' => false,
+                'message' => '<center>Form not found.</center>'
+            ]);
+        }
+
+        $modelName = $forms[$formId]['model_name'];
+
+        if (!class_exists($modelName)) {
+            return response()->json([
+                'success' => false,
+                'message' => "<center>Model {$modelName} does not exist.</center>"
+            ]);
+        }
+
+        // Return JSON for DataTable
+        $records = $modelName::with('created_user', 'category')->orderBy('id', 'desc')->get(); 
+        
         return response()->json([
-            'success' => false,
-            'message' => 'Form not found.'
+            'success' => true,
+            'records' => $records
         ]);
     }
 
-    $modelName = $forms[$formId]['model_name'];
-
-    if (!class_exists($modelName)) {
-        return response()->json([
-            'success' => false,
-            'message' => "Model {$modelName} does not exist."
-        ]);
+    private function getAccessValidate($formId, $accessType)
+    {
+        $access_list = \session()->get('user_form_access', []);
+        $specific_form_access = $access_list[$formId] ?? [];
+        $has_access = $specific_form_access ? $specific_form_access['access'][$accessType] ?? false : false;
+        return $has_access;
     }
-
-    // Return JSON for DataTable
-    $records = $modelName::orderBy('id','desc')->get(); // Or add ->paginate() if needed
-
-    return response()->json([
-        'success' => true,
-        'records' => $records
-    ]);
-}
-
 }

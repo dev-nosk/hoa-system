@@ -1,0 +1,8 @@
+#recordsTable{
+    width: 100%;
+    border-collapse: collapse;
+}
+#recordsTable th, #recordsTable td{
+    border: 1px solid #ddd;
+    padding: 3px !important;
+}
