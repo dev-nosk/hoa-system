@@ -17,7 +17,8 @@ return new class extends Migration
             $table->integer('field_id');
             $table->integer('tab_id');
             $table->integer('required')->default(0);
-            $table->text('input_name');
+            $table->text('input_name'); #referance from table
+             $table->text('label');
             $table->integer('sequence')->default(0);
             $table->integer('create_by')->default(1);
             $table->integer('updated_by')->default(1);

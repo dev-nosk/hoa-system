@@ -14,13 +14,13 @@
                    name="{{ $field['input_name'] }}"
                    value="{{ $value ?? '' }}"
                    data-required="{{ $field['required'] ?? 0 }}"
-                   placeholder="0.00">
+                   placeholder="#">
 
         @else
 
             {{-- VIEW MODE --}}
             <div class="show-record fw-semibold">
-                ₱ {{ number_format($record[$field['input_name']] ?? 0, 2) }}
+                 {{$record[$field['input_name']] ?? '' }}
             </div>
 
             {{-- EDIT MODE (Hidden Initially) --}}
@@ -31,7 +31,7 @@
                        name="{{ $field['input_name'] }}"
                        value="{{ $record[$field['input_name']] ?? '' }}"
                        data-required="{{ $field['required'] ?? 0 }}"
-                       placeholder="0.00">
+                       placeholder="">
             </div>
 
         @endif

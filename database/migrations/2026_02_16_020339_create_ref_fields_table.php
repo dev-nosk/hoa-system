@@ -17,10 +17,9 @@ return new class extends Migration
             $table->text('field_type');
             $table->text('field_class');
             $table->text('field_id');
-            $table->text('label');
-            $table->text('ref_table');
-            $table->text('ref_table_value');
-            $table->text('ref_display');
+            $table->text('ref_table')->nullable();
+            $table->text('ref_table_value')->nullable();
+            $table->text('ref_display')->nullable();
             $table->integer('sequence')->default(0);
             $table->integer('create_by')->default(1);
             $table->integer('updated_by')->default(1);

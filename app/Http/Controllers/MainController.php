@@ -12,7 +12,7 @@ use App\Models\CategoryModel;
 use App\Models\FormStatusModel;
 use Illuminate\Support\Facades\Schema;
 use App\Models\User;
-
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\View;
 
 use function Pest\Laravel\session;
@@ -102,7 +102,7 @@ class MainController extends Controller
 
             \session()->put('forms', $get_forms_by_id);
         }
-        if (!\session()->has('home')) {
+        if (!\session()->has('home') || empty(\session('home'))) {
             $get_home = $this->authorizationRepository->getHome()->toArray();
             \session()->put('home', $get_home);
         }
@@ -292,7 +292,7 @@ class MainController extends Controller
             }
             $record->current_status_id = $forms[$form_id]['initial_status'];
             $record->save();
-
+            // $this->addStatusHistory($forms[$form_id]['initial_status'],Auth::user()->id,date('Y-m-d H:s:i'));
             return response()->json([
                 'success' => true,
                 'message' => 'Record saved successfully!',
@@ -362,7 +362,7 @@ class MainController extends Controller
         $formId = $request->form_id;
         \session()->put('form_id', $formId);
         $has_access =  $this->getAccessValidate($formId, 'create');
-
+   
         if (!$has_access) {
             return response()->json([
                 'html' => '<center><h3>You do not have access to create records for this form.</h3></center>',
@@ -370,7 +370,7 @@ class MainController extends Controller
                 'message' => 'You do not have access to create records for this form.'
             ]);
         }
-
+    // dd($this->generateFormHtml($formId, false));
         return response()->json([
             'html' => $this->generateFormHtml($formId, false), // false = create/edit,
             'isView' => false,
@@ -384,27 +384,30 @@ class MainController extends Controller
         $recordId = $request->record_id;
 
 
-        // Get record if available
+       
         $record = null;
         $forms = \session()->get('forms');
         if ($recordId && isset($forms[$formId]['model_name'])) {
-
+          
             $modelName = $forms[$formId]['model_name'];
             if (class_exists($modelName)) {
 
                 $record = $modelName::find($recordId);
             }
-        }
-        $current_status_id = $record ? $record->current_status_id : null;
 
+        }
+
+        $current_status_id = $record ? $record->current_status_id : null;
+      
         $current_form_status = null;
         $status_next = collect();
 
         if ($formId && $current_status_id) {
-
+            
             $current_form_status = FormStatusModel::with('repStatus')->where('form_id', $formId)
                 ->where('status_id', $current_status_id)
                 ->first();
+            
 
             if ($current_form_status && $current_form_status->status_next) {
                 $nextStatusIds = explode(',', $current_form_status->status_next);
@@ -415,13 +418,17 @@ class MainController extends Controller
                     ->whereIn('status_id', $nextStatusIds)
                     ->get();
             }
+            else{
+                $current_form_status = "no current status";
+            }
         }
 
-        // dd($current_form_status, $status_nextes);
+        // dd($current_form_status, $status_next);
         return response()->json([
             'html' => $this->generateFormHtml($formId, true, $record),
             'isView' => true,
             'status' => [
+               
                 'current' => $current_form_status,
                 'next' => $status_next
             ]
@@ -429,23 +436,75 @@ class MainController extends Controller
     }
     private function generateFormHtml($formId, $isView = false, $record = null)
     {
+        $role = Auth::user()->toArray()['role'];
         $fields = FormFieldsModel::with(['refField', 'tab'])
             ->where('form_id', $formId)
             ->get();
-        if($fields->isEmpty()){
-            return '<center><h3>No fields defined for this form.</h3></center>';
+        $create_field = '';
+     
+        // $record = $record;
+
+        if ($role == 0) {
+            $create_field = "<a href='#' id='create-field-link' data-form-id='{$formId}'  >Create Field</a>";
+        }
+        if ($fields->isEmpty()) {
+            return '<center><h3>No fields defined for this form.</h3> ' . $create_field . '</center>';
         }
 
         $tabIds = $fields->pluck('tab_id')->unique()->toArray();
         $uniqueTabs = $fields->pluck('tab')->filter()->unique('id')->sortBy('id')->values();
         $tabsFields = $fields->groupBy('tab_id')->transform(fn($f) => $f->sortBy('sequence')->values());
+        $html = '';
+        if ($isView) {
 
-        $html = '<form action="#" id="form_submit" method="POST">';
+            $html .= '
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+
+                        <!-- Left Side -->
+                        <div>
+                            <button type="button" class="btn btn-secondary me-2 list-view "data-formid="'.$formId.'" id="back-to-list">
+                                <i class="bi bi-arrow-left"></i> Back to List
+                            </button>
+                        </div>
+
+                        <!-- Right Side -->
+                        <div class="d-flex align-items-center gap-2">
+
+                            <button type="button" class="btn btn-primary" id="edit-btn">
+                                <i class="bi bi-pencil"></i> Edit
+                            </button>
+
+                            <button type="submit" class="btn btn-success d-none" id="save-btn">
+                                <i class="bi bi-save"></i> Save
+                            </button>
+
+                            <button type="button" class="btn btn-danger d-none" id="cancel-btn">
+                                <i class="bi bi-x"></i> Cancel
+                            </button>
+
+                           <div class="dropdown" id="change-status-div" >
+                    <button class="btn btn-success dropdown-toggle"style="float:right" type="button" data-bs-toggle="dropdown">
+                       Change Status
+                    </button>
+                    <ul class="dropdown-menu" id="status-change-list">
+                        
+                    </ul>
+                </div>
+                        </div>
+                    </div>';
+                        }
+        $html .= '<form action="#" id="form_submit" method="POST">';
         $html .= csrf_field();
+         if (!$isView) {
 
-        if (!$isView) {
-            $html .= '<button type="submit" class="btn btn-success float-end mb-3">Save</button>';
-        }
+            $html .= '
+                    <div class="d-flex justify-content-end mb-3">
+                        <button type="submit" id="save_btn" class="btn btn-success">
+                            <i class="bi bi-save"></i> Save
+                        </button>
+                    </div>';
+                } 
+            
 
         // Tabs header
         $first = true;
@@ -481,22 +540,30 @@ class MainController extends Controller
                       role="tabpanel" 
                       aria-labelledby="tab' . $tab->id . '-tab">
                       <div class="row">';
+                    // return$tabsFields->toArray();
             if (isset($tabsFields[$tab->id])) {
                 foreach ($tabsFields[$tab->id] as $field) {
 
                     $field_data = $field->refField;
-                    if (!$field_data) continue;
-                    $field_unique_id = $formId . '_' . $field->sequence . '_' . $field_data->id;
-                    $viewName = 'form.' . $field_data->field_type;
+                    if ($field_data) {
+                         $field_unique_id = $formId . '_' . $field->sequence . '_' . $field_data->id;
+                        $viewName = 'form.' . $field_data->field_type;
 
-                    if (View::exists($viewName)) {
+                        if (View::exists($viewName)) {
 
-                        $value = $record ? ($record->{$field['input_name']} ?? '') : '';
+                            $value = $record ? ($record->{$field['input_name']} ?? '') : '';
+                            $label = view('form.layout_label', compact('field', 'field_unique_id'))->render();
 
-                        $html .= view($viewName, compact('field', 'field_data', 'field_unique_id', 'isView', 'value'))->render();
+                            $html .= view($viewName, compact('field', 'field_data', 'field_unique_id', 'isView', 'value', 'record', 'label'))->render();
+                        } else {
+                             $field_unique_id = $formId . '_' . $field->sequence . '_' . $field_data->id;
+                            $label = view('form.layout_label', compact('field', 'field_unique_id'))->render();
+                            $html .= view('form.default_fields', compact('field', 'viewName', 'field_unique_id', 'label'));
+                        }
                     } else {
-                        $html .= "<!-- View {$viewName} does not exist -->";
+                        $html .= view('form.default_fields', compact('field', 'viewName', 'field_unique_id','isView','record', 'label'));
                     }
+                   
                 }
             }
             $html .= '</div></div>';
@@ -507,9 +574,54 @@ class MainController extends Controller
         return $html;
     }
 
+    public function changeStatus(Request $request)
+    {
+        dd('change status', $request->all());
+        $recordId = $request->input('record_id');
+        $newStatusId = $request->input('new_status_id');
+
+        $formId = \session()->get('form_id');
+        $forms = \session()->get('forms');
+
+        if (!$formId || !$forms || !isset($forms[$formId]['model_name'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Form ID or model_name not found in session.'
+            ]);
+        }
+
+        $modelName = $forms[$formId]['model_name'];
+
+        if (!class_exists($modelName)) {
+            return response()->json([
+                'success' => false,
+                'message' => "Model {$modelName} does not exist."
+            ]);
+        }
+
+        $record = $modelName::find($recordId);
+
+        if (!$record) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Record not found.'
+            ]);
+        }
+
+        $record->current_status_id = $newStatusId;
+        $record->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status updated successfully!',
+            'record' => $record
+        ]);
+    }
 
     public function getList(Request $request)
     {
+
+
         $formId = $request->form_id;
         \session()->put('form_id', $formId);
         $has_access =  $this->getAccessValidate($formId, 'listview');
@@ -530,29 +642,81 @@ class MainController extends Controller
             ]);
         }
 
+        $role = Auth::user()->toArray()['role'];
+
         $modelName = $forms[$formId]['model_name'];
+      
+        # for super admin show create model and create table link if model or table not exists
+        $create_model = '<center> This feature not available right now. Please contact developer </center>';
+        $create_table = '<center> This feature not available right now. Please contact developer </center>';
+        if ($role == 0) {
+            $create_model = "<center>Model {$modelName} does not exist.<a href='#' id='create-model-link' data-form-id='{$formId}' data-model-name='{$modelName}' >Create Model</a></center>";
+        }
 
         if (!class_exists($modelName)) {
             return response()->json([
                 'success' => false,
-                'message' => "<center>Model {$modelName} does not exist.</center>"
+                'message' => $create_model
+            ]);
+        }
+        $table = (new $modelName)->getTable();
+        $create_table = '<center> This feature not available right now. Please contact developer </center>';
+        if ($role == 0) {
+            $create_table = "<center>Table '{$table}' for model {$modelName} does not exist. <a href='#' id='create-table-link' data-form-id='{$formId}' data-model-name='{$modelName}' >Create Table</a></center>";
+        }
+        if (!Schema::hasTable($table)) {
+            return response()->json([
+                'success' => false,
+                'message' => $create_table
             ]);
         }
 
-        // Return JSON for DataTable
-        $records = $modelName::with('created_user', 'category')->orderBy('id', 'desc')->get(); 
-        
+        $relations = [];
+        if (method_exists($modelName, 'created_user')) {
+            $relations[] = 'created_user';
+        }
+        if (method_exists($modelName, 'category')) {
+            $relations[] = 'category';
+        }
+
+        $records = $modelName::with($relations)->orderBy('id', 'desc')->get();
+        $formFolder = 'form_listview';
+        $formViewFile = 'list_view_form_' . $formId;
+
+        $viewName = $formFolder . '.' . $formViewFile;
+
+        $viewPath = resource_path("views/{$formFolder}/{$formViewFile}.blade.php");
+
+        File::ensureDirectoryExists(resource_path("views/{$formFolder}"));
+
+        if (!View::exists($viewName)) {
+            File::put($viewPath, '
+        <div class="text-center p-4">
+            <h5>No content for form</h5>
+        </div>
+    ');
+        }
+
+        // Render the view
+        $html = view($viewName, compact('records'))->render();
         return response()->json([
             'success' => true,
-            'records' => $records
+            'records' => $records,
+            'html' => $html
         ]);
     }
 
     private function getAccessValidate($formId, $accessType)
     {
         $access_list = \session()->get('user_form_access', []);
+       
         $specific_form_access = $access_list[$formId] ?? [];
         $has_access = $specific_form_access ? $specific_form_access['access'][$accessType] ?? false : false;
         return $has_access;
+    }
+
+    private function addStatusHistory($status_id,$create_by,$date_created){
+
+
     }
 }

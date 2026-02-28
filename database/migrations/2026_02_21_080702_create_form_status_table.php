@@ -17,7 +17,7 @@ return new class extends Migration
             $table->integer('status_id');
             $table->integer('sequence')->default(1);
             $table->text('status_next')->nullable();
-            $table->text('workgroup_ids')->default(1);
+            $table->text('workgroup_ids');
             $table->text('category_ids')->nullable();
             $table->integer('task_create')->nullable();
             $table->integer('required_fields')->nullable();

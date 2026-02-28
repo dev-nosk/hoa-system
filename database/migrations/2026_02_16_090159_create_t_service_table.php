@@ -13,11 +13,12 @@ return new class extends Migration
     {
         Schema::create('t_service', function (Blueprint $table) {
             $table->id();
-            $table->integer('service_request_by');
-            $table->date('service_request_at');
-            $table->integer('service_category_id');
-            $table->integer('current_status_id');
-            $table->integer('create_by')->default(1);
+            $table->integer('service_request_by')->nullable();
+            $table->date('service_request_at')->nullable();
+            $table->integer('service_category_id')->nullable();
+            $table->integer('current_status_id')->nullable();
+            $table->integer('service_amount')->nullable();
+            $table->integer('created_by')->default(1);
             $table->integer('updated_by')->default(1);
             $table->timestamps();
         });

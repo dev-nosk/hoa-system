@@ -3,6 +3,7 @@ $(document).on('click', '.create-record', function (e) {
 
     var form_id = $(this).data('formid');
     var system_name = $(this).data('formname')
+    $('#change-status-div').hide();
 
     // Example AJAX sending all params
     $.ajax({

@@ -20,7 +20,9 @@
                 </div>
             </div>
             <div class="card-body h-100">
+                
                 <div class="container-fluid mt-4">
+
                     <div id="content-display" style="min-height: 60vh;">
 
                         <div class="p-3">
@@ -30,14 +32,14 @@
                             <div class="skeleton skeleton-text"></div>
                             <div class="mt-3 skeleton skeleton-button"></div>
                         </div>
-                         <div class="p-3">
+                        <div class="p-3">
                             <div class="skeleton skeleton-title"></div>
                             <div class="skeleton skeleton-text"></div>
                             <div class="skeleton skeleton-text"></div>
                             <div class="skeleton skeleton-text"></div>
                             <div class="mt-3 skeleton skeleton-button"></div>
                         </div>
-                         <div class="p-3">
+                        <div class="p-3">
                             <div class="skeleton skeleton-title"></div>
                             <div class="skeleton skeleton-text"></div>
                             <div class="skeleton skeleton-text"></div>

@@ -1,25 +1,51 @@
+<div class="row mb-3 align-items-center">
 
-<div class="row mb-2">
-    <div class="col-md-2 text-end">
-        <label for="input_{{ $field_unique_id }}" class="form-label">
+  {{-- Label --}}
+  {!! $label !!}
 
-        {{ $field['required'] ? '*' : ''  }}  
-             {{ $field_data['label'] }} :
-        
-        </label>
+  {{-- Input / View Column --}}
+  <div class="col-md-6">
+
+    @if(!$isView)
+
+    <div class="input-group">
+      <input type="text"
+        id="lookup_display_{{ $field_unique_id }}"
+        class="form-control "
+        placeholder="select-user" disabled>
+      <button class="btn btn-primary" type="button" id="lookup-btn" data-targetid="{{ $field_unique_id }}"><i class="fa fa-user"></i></button>
     </div>
-    <div class="col-md-6">
-        <div class="input-group">
-            <input type="text"
-                id="lookup_display_{{ $field_unique_id }}"
-                class="form-control "
-                placeholder="select-user" disabled>
-            <button class="btn btn-primary" type="button" id="lookup-btn" data-targetid="{{ $field_unique_id }}"><i class="fa fa-user"></i></button>
-        </div>
-        <input type="hidden" class="form-control"  data-required="{{ $field['required'] ?? 0 }}" id="input_{{ $field_unique_id }}" name="{{ $field['input_name'] }}" " value=""  {{ $field['required'] ? 'required' : ''  }}  readonly>
-    </div> 
-    <span id="error_{{ $field_unique_id }}"></span>
+    <input type="hidden" class="form-control" data-required="{{ $field['required'] ?? 0 }}" id="input_{{ $field_unique_id }}" name="{{ $field['input_name'] }}" " value=""  {{ $field['required'] ? 'required' : ''  }}  readonly>
+   
+        @else
+
+            {{-- VIEW MODE --}}
+      <div class=" show-record fw-semibold">
+     {{ $record[$field['input_name']] ?? 0 }}
+  </div>
+
+  {{-- EDIT MODE (Hidden Initially) --}}
+  <div class="edit-record d-none">
+    <input type="text"
+      class="form-control text-end amount-input"
+      id="input_{{ $field_unique_id }}"
+      name="{{ $field['input_name'] }}"
+      value="{{ $record[$field['input_name']] ?? '' }}"
+      data-required="{{ $field['required'] ?? 0 }}"
+      placeholder="0.00">
+  </div>
+
+  @endif
+
+  {{-- Error Message --}}
+  <small id="error_{{ $field_unique_id }}"
+    class="text-danger d-block mt-1"></small>
+
 </div>
+</div>
+
+
+
 
 <div class="modal fade" id="lookupModal" tabindex="-1" aria-labelledby="lookupModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
@@ -35,7 +61,7 @@
               <th>ID</th>
               <th>Name</th>
               <th>Email</th>
-           
+
             </tr>
           </thead>
           <tbody>

@@ -1,9 +1,10 @@
 <?php
-
+use App\Http\Controllers\ModelGeneratorController;
 use App\Http\Controllers\MainController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AdminController;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -39,5 +40,16 @@ Route::get('get-category',[MainController::class,'getCategory']);
 Route::post('save-record',[MainController::class,'saveRecord']);
 Route::post('view-record',[MainController::class,'viewRecord']);
 Route::post('get-list',[MainController::class,'getList']);
+Route::post('change-status',[MainController::class,'changeStatus']);
 
+
+
+Route::get('/model-generator', [ModelGeneratorController::class, 'index']);
+Route::post('/model-generator/create', [ModelGeneratorController::class, 'create']);
+
+
+
+#admin 
+
+Route::get('/create-form',[AdminController::class,'createForm']);
 require __DIR__.'/auth.php';
