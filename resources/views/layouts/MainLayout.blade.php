@@ -564,7 +564,7 @@ $forms          = \session()->has('forms') ? session('forms') : [];
                     <div class="navbar-vertical-content scrollbar">
                         <ul class="navbar-nav flex-column mb-3" id="navbarVerticalNav">
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ route('mainview') }}">
+                                <a class="nav-link default-app" data-app="feed" href="#">
                                     <div class="d-flex align-items-center">
                                         <span class="nav-link-icon">
                                             <span class="fas fa-newspaper"></span>
@@ -572,12 +572,20 @@ $forms          = \session()->has('forms') ? session('forms') : [];
                                         <span class="nav-link-text ps-1">Feed</span>
                                     </div>
                                 </a>
-                                <a class="nav-link" href="{{ route('mainview') }}">
+                                <a class="nav-link default-app" data-app="dashboard" href="#">
                                     <div class="d-flex align-items-center">
                                         <span class="nav-link-icon">
                                             <span class="fas fa-chart-pie"></span>
                                         </span>
                                         <span class="nav-link-text ps-1">Dashboard</span>
+                                    </div>
+                                </a>
+                                <a class="nav-link default-app" data-app="inbox" href="#">
+                                    <div class="d-flex align-items-center">
+                                        <span class="nav-link-icon">
+                                            <span class="fas fa-inbox"></span>
+                                        </span>
+                                        <span class="nav-link-text ps-1">Inbox</span>
                                     </div>
                                 </a>
 
@@ -670,6 +678,14 @@ $forms          = \session()->has('forms') ? session('forms') : [];
                                             <span class="fas fa-check"></span>
                                         </span>
                                         <span class="nav-link-text ps-1">status</span>
+                                    </div>
+                                </a>
+                                <a class="nav-link" href="#">
+                                    <div class="d-flex align-items-center">
+                                        <span class="nav-link-icon">
+                                            <span class="fas fa-file"></span>
+                                        </span>
+                                        <span class="nav-link-text ps-1">fields</span>
                                     </div>
                                 </a>
                                 <a class="nav-link" href="#">
@@ -1950,7 +1966,84 @@ $forms          = \session()->has('forms') ? session('forms') : [];
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 }
             });
-            $('#content-display').html(`<center>no data loaded</center>`)
+
+            function getFeed() {
+                $.ajax({
+                    url: '/get-feed',
+                    type: 'GET',
+                    dataType: "json",
+                    beforeSend: function() {
+                        $('#content-display').html(`
+                                  <div class="p-3">
+                                        <div class="skeleton skeleton-title"></div>
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="mt-3 skeleton skeleton-button"></div>
+                                    </div>
+                                    <div class="p-3">
+                                        <div class="skeleton skeleton-title"></div>
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="mt-3 skeleton skeleton-button"></div>
+                                    </div>
+                                    <div class="p-3">
+                                        <div class="skeleton skeleton-title"></div>
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="mt-3 skeleton skeleton-button"></div>
+                                    </div>
+                            `);
+                    },
+                    success: function(response) {
+                        $('#content-display').html(response.html);
+                    },
+                    error: function(xhr) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            html: 'Something went wrong. Please try again.'
+                        });
+                    }
+                });
+            }
+
+            // 🔥 MOVE THIS OUTSIDE
+            function getInbox() {
+                $('#content-display').html('inbox');
+            }
+
+            function getDashboard(){
+                     $('#content-display').html('no content for dashboard');
+            }
+
+            getFeed();
+
+            $(document).on('click', '.default-app', function() {
+
+                var app = $(this).data('app');
+
+                switch (app) {
+                    case 'feed':
+                        getFeed();
+                        break;
+
+                    case 'inbox':
+                        getInbox();
+                        break;
+                    case 'dashboard':
+                        getDashboard();
+                        break;
+                    default:
+                        $('#content-display').html('no function for this app');
+                        break;
+                }
+            });
+
+
+            // $('#content-display').html(`<center>no data loaded</center>`)
         });
     </script>
     @yield('scripts')

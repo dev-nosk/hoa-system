@@ -1,4 +1,4 @@
-const { data } = require("alpinejs");
+// const { data } = require("alpinejs");
 
 
 function viewRecord(record_id){
@@ -30,13 +30,13 @@ function viewRecord(record_id){
                 var color = data.status.current.rep_status.status_tag == 'CLOSED' ? 'danger' : 'primary';
                 status_list += `<li class="dropdown-item fw-bold text-${color}">
                                  ${data.status.current.rep_status.status_name}
-                                </li> <hr>`;
+                                </li> `;
              }
              if(data.status.next){
 
                 $(data.status.next).each(function(index, status){
                     var statusColor = status.rep_status.status_tag == 'CLOSED' ? 'danger' : 'primary';
-                    status_list += `<li class="dropdown-item text-${statusColor}" data-statusid="${status.status_id}" data-recordid="${record_id}" onclick="changeStatus(this)">
+                    status_list += `<hr><li class="dropdown-item text-${statusColor}" data-statusid="${status.status_id}" data-recordid="${record_id}" onclick="changeStatus(this)">
                                      ${status.rep_status.status_name}
                                     </li>`;
                 });
@@ -102,3 +102,25 @@ function changeStatus(element){
         }
     });
 }
+
+$(document).ready(function(){
+
+$(document).on('click','#edit-btn',function(){
+    $(this).addClass('d-none');
+    $('#change-status-div').addClass('d-none');
+    $('#save-btn').removeClass('d-none');
+    $('#cancel-btn').removeClass('d-none');
+    $('.show-record').addClass('d-none');
+    $('.edit-record').removeClass('d-none');
+})
+
+$(document).on('click','#cancel-btn',function(){
+    $(this).addClass('d-none');
+    $('#change-status-div').removeClass('d-none');
+    $('#save-btn').addClass('d-none');
+    $('#edit-btn').removeClass('d-none');
+    $('.show-record').removeClass('d-none');
+    $('.edit-record').addClass('d-none');
+})
+
+})

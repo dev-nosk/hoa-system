@@ -6,7 +6,6 @@ use App\Repositories\Helper\AuthorizationRepository;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\WorkgroupModel;
 use App\Models\FormFieldsModel;
 use App\Models\CategoryModel;
 use App\Models\FormStatusModel;
@@ -111,17 +110,7 @@ class MainController extends Controller
         return view('mainview');
     }
 
-    public function workgroupView()
-    {
-        $user = Auth::user();
-        if (! $user) {
-            return null;
-        }
-        $user_data = $user->toArray();
-        $workgoups = WorkgroupModel::all()->toArray();
-
-        return view('admin.WorkgroupView', compact('user_data', 'workgoups'));
-    }
+   
 
     // public function formBuilder(Request $request)
     // {
@@ -407,19 +396,17 @@ class MainController extends Controller
             $current_form_status = FormStatusModel::with('repStatus')->where('form_id', $formId)
                 ->where('status_id', $current_status_id)
                 ->first();
-            
 
-            if ($current_form_status && $current_form_status->status_next) {
-                $nextStatusIds = explode(',', $current_form_status->status_next);
-
-                $nextStatusIds = array_map('trim', $nextStatusIds);
-
-                $status_next = FormStatusModel::with('repStatus')->where('form_id', $formId)
-                    ->whereIn('status_id', $nextStatusIds)
-                    ->get();
-            }
-            else{
-                $current_form_status = "no current status";
+            if ($current_form_status) {
+                if ($current_form_status->status_next) {
+                    $nextStatusIds = explode(',', $current_form_status->status_next);
+                    $nextStatusIds = array_map('trim', $nextStatusIds);
+                    $status_next = FormStatusModel::with('repStatus')->where('form_id', $formId)
+                        ->whereIn('status_id', $nextStatusIds)
+                        ->get();
+                } else {
+                    $status_next = [];
+                }
             }
         }
 
@@ -428,7 +415,6 @@ class MainController extends Controller
             'html' => $this->generateFormHtml($formId, true, $record),
             'isView' => true,
             'status' => [
-               
                 'current' => $current_form_status,
                 'next' => $status_next
             ]
@@ -473,23 +459,20 @@ class MainController extends Controller
                             <button type="button" class="btn btn-primary" id="edit-btn">
                                 <i class="bi bi-pencil"></i> Edit
                             </button>
-
+                              <button type="button" class="btn btn-danger d-none" id="cancel-btn">
+                                <i class="bi bi-x"></i> Cancel
+                            </button>
                             <button type="submit" class="btn btn-success d-none" id="save-btn">
                                 <i class="bi bi-save"></i> Save
                             </button>
-
-                            <button type="button" class="btn btn-danger d-none" id="cancel-btn">
-                                <i class="bi bi-x"></i> Cancel
+                          <div class="dropdown" id="change-status-div" >
+                            <button class="btn btn-success dropdown-toggle"style="float:right;" type="button" data-bs-toggle="dropdown">
+                            Change Status
                             </button>
-
-                           <div class="dropdown" id="change-status-div" >
-                    <button class="btn btn-success dropdown-toggle"style="float:right" type="button" data-bs-toggle="dropdown">
-                       Change Status
-                    </button>
-                    <ul class="dropdown-menu" id="status-change-list">
-                        
-                    </ul>
-                </div>
+                            <ul class="dropdown-menu" id="status-change-list" style="background-color:aliceblue !important">
+                                
+                            </ul>
+                        </div>
                         </div>
                     </div>';
                         }
@@ -576,10 +559,10 @@ class MainController extends Controller
 
     public function changeStatus(Request $request)
     {
-        dd('change status', $request->all());
+      
         $recordId = $request->input('record_id');
-        $newStatusId = $request->input('new_status_id');
-
+        $newStatusId = $request->input('status_id');
+        // dd($newStatusId);
         $formId = \session()->get('form_id');
         $forms = \session()->get('forms');
 

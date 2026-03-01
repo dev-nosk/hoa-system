@@ -5,6 +5,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ContentController;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -23,9 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::get('/workgroup', [MainController::class, 'workgroupView'])
-    ->middleware(['auth'])
-    ->name('workgroup');
+
 
 
 Route::get('sesion-removed',[SessionController::class ,'sessionRemoved']);
@@ -47,9 +46,13 @@ Route::post('change-status',[MainController::class,'changeStatus']);
 Route::get('/model-generator', [ModelGeneratorController::class, 'index']);
 Route::post('/model-generator/create', [ModelGeneratorController::class, 'create']);
 
-
+# feed 
+Route::get('/get-feed',[ContentController::class , 'getFeed']);
 
 #admin 
 
 Route::get('/create-form',[AdminController::class,'createForm']);
+Route::get('/workgroup', [AdminController::class, 'workgroupView'])
+    ->middleware(['auth'])
+    ->name('workgroup');
 require __DIR__.'/auth.php';
